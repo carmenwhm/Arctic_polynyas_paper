@@ -40,8 +40,8 @@ if __name__ == '__main__':
 
     # Read one winter files
     for i, year in enumerate(yr_1978):
-        SIC_Data_folder = '/proj/naiss2024-22-523/PhD_Year1/1978_2024_SMMR/%s_%s/SIC/'%(year,year+1)
-        Grid_folder = '/proj/naiss2024-22-523/PhD_Year1/'
+        SIC_Data_folder =                                         # SIC files folder path
+        Grid_folder =                                             # Grid folder path
         gridf_name_25 = 'NSIDC0771_LatLon_PS_N25km_v1.0.nc'
         SIC_datafile_name = '*v2.0.nc' 
     
@@ -86,7 +86,8 @@ if __name__ == '__main__':
                 
                 masked_SIC = np.where(full_sic_arr[index]>250,-999,full_sic_arr[index])
                 _, _, SIC_location[index] = polynyas_loc_SIC_LR(masked_SIC,concentration)
-    
+                
+                # Regions exclusion
                 _, _, exclude_regional_1 = select_region(full_lon=SIC_lon_SMMR,full_lat=SIC_lat_SMMR,full_var=full_sic_arr[index],\
                                                                         lon_min=70,lon_max=84,lat_min=66,lat_max=73,Delete_data=True)
         
@@ -143,7 +144,7 @@ if __name__ == '__main__':
 
 
     # Save polynya winter base map
-    pathsave = '/proj/naiss2024-22-523/PhD_Year1/20250430/Results/'
+    pathsave =                                          # Path saving results
     
     with nc.Dataset(f'{pathsave}SMMR_winter_basemap.nc', 'w', format='NETCDF4') as file: \
         # Create dimensions
@@ -172,7 +173,7 @@ if __name__ == '__main__':
     formatted_dates_array = formatted_dates.dt.strftime('%Y-%m-%d').to_numpy()
 
     # Save daily polynya locations
-    pathsave = '/proj/naiss2024-22-523/PhD_Year1/20250430/Results/'
+    pathsave =                                                                  # Path saving results
     with nc.Dataset(f'{pathsave}daily_location_SMMR.nc', 'w', format='NETCDF4') as file: \
         # Create dimensions
         file.createDimension('time', Daily_sic.shape[0] - 1)
@@ -201,7 +202,7 @@ if __name__ == '__main__':
     area_table_2 = pd.DataFrame(data=total_area_SMMR,index=conc_SMMR,columns=period_list)
     num_table = pd.DataFrame(data=total_num_SIC,index=conc_SMMR,columns=period_list)
     
-    area_table.to_csv('/proj/naiss2024-22-523/PhD_Year1/20250430/Area_csv/Arctic_cumulative_area_1978_2024_SMMR.csv',sep=',')
-    area_table_2.to_csv('/proj/naiss2024-22-523/PhD_Year1/20250430/Area_csv/Arctic_potential_area_1978_2024_SMMR.csv',sep=',')
-    num_table.to_csv('/proj/naiss2024-22-523/PhD_Year1/20250430/Area_csv/Arctic_cumulative_num_1978_2024_SMMR.csv',sep=',')
+    area_table.to_csv('./Arctic_cumulative_area_1978_2024_SMMR.csv',sep=',')
+    area_table_2.to_csv('./Arctic_potential_area_1978_2024_SMMR.csv',sep=',')
+    num_table.to_csv('./Arctic_cumulative_num_1978_2024_SMMR.csv',sep=',')
 

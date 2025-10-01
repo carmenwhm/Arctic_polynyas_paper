@@ -16,12 +16,12 @@ from Polynyas_trend_function_SMMR import *
 if __name__ == '__main__':
 
     # 25km SMMR SIC grid
-    f_read = nc.Dataset('./NSIDC0771_LatLon_PS_N25km_v1.0.nc')
+    f_read = nc.Dataset('/proj/naiss2024-22-523/PhD_Year1/NSIDC0771_LatLon_PS_N25km_v1.0.nc')
     SIC_lat_SMMR = f_read.variables['latitude'][:]
     SIC_lon_SMMR = f_read.variables['longitude'][:]
     
     # 25km SMMR SIC grid area 
-    f_area = nc.Dataset('./NSIDC0771_CellArea_PS_N25km_v1.0.nc')
+    f_area = nc.Dataset('/proj/naiss2024-22-523/PhD_Year1/NSIDC0771_CellArea_PS_N25km_v1.0.nc')
     cell_area_SMMR = f_area['cell_area'][:]
 
     # Year array
@@ -29,6 +29,7 @@ if __name__ == '__main__':
     
     # Concentration variation
     conc_SMMR = np.arange(0.3,0.7,0.1)
+    # conc_SMMR = np.arange(0.5,0.6,0.1)
 
     SIC_yearly_base_loc_1978 = np.zeros((conc_SMMR.shape[0],yr_1978.shape[0],SIC_lat_SMMR.shape[0],SIC_lat_SMMR.shape[1]))
     Daily_location = np.full((SIC_lat_SMMR.shape[0],SIC_lat_SMMR.shape[1]),np.nan)
@@ -40,8 +41,8 @@ if __name__ == '__main__':
 
     # Read one winter files
     for i, year in enumerate(yr_1978):
-        SIC_Data_folder =                                         # SIC files folder path
-        Grid_folder =                                             # Grid folder path
+        SIC_Data_folder = '/proj/naiss2024-22-523/PhD_Year1/1978_2024_SMMR/%s_%s/SIC/'%(year,year+1)
+        Grid_folder = '/proj/naiss2024-22-523/PhD_Year1/'
         gridf_name_25 = 'NSIDC0771_LatLon_PS_N25km_v1.0.nc'
         SIC_datafile_name = '*v2.0.nc' 
     
@@ -69,25 +70,24 @@ if __name__ == '__main__':
             full_lat_arr, full_lon_arr, full_sic_arr, date_test, siconc_file_num = nc_merge_files_NSIDC(SIC_Data_folder,Grid_folder,\
                                                                                         SIC_datafile_name,gridf_name_25,'F17_ICECON')
     
-        date_list.append(date_test)
+        # date_list.append(date_test) # For daily file
         
         SIC_location = np.zeros((siconc_file_num,SIC_lat_SMMR.shape[0],SIC_lat_SMMR.shape[1]))     
         SIC_polynyas_labeled = np.zeros((siconc_file_num,SIC_lat_SMMR.shape[0],SIC_lat_SMMR.shape[1]))
         filter_sic = np.zeros((siconc_file_num,SIC_lat_SMMR.shape[0],SIC_lat_SMMR.shape[1]))
         SIC_polynyas_num = np.zeros(siconc_file_num)
+        SIC_area = []
+        SIC_daily_num = []
+    
 
         for j, concentration in enumerate(conc_SMMR):
             for k in range(siconc_file_num):
 
-                SIC_area = []
-                SIC_daily_num = []
-    
                 index = 0+k
                 
                 masked_SIC = np.where(full_sic_arr[index]>250,-999,full_sic_arr[index])
                 _, _, SIC_location[index] = polynyas_loc_SIC_LR(masked_SIC,concentration)
-                
-                # Regions exclusion
+    
                 _, _, exclude_regional_1 = select_region(full_lon=SIC_lon_SMMR,full_lat=SIC_lat_SMMR,full_var=full_sic_arr[index],\
                                                                         lon_min=70,lon_max=84,lat_min=66,lat_max=73,Delete_data=True)
         
@@ -131,8 +131,8 @@ if __name__ == '__main__':
             
             Daily_location = np.concatenate((Daily_location,SIC_polynyas_labeled),axis=0)
 
-            SIC_winterly_area = np.sum(SIC_area)
-            SIC_base_loc = np.sum(SIC_polynyas_labeled,axis=0)>0
+            SIC_winterly_area = np.nansum(SIC_area)
+            SIC_base_loc = np.nansum(SIC_polynyas_labeled,axis=0)>0
     
             s = generate_binary_structure(2,2)
             SIC_base_loc_arr, SIC_base_num = label(SIC_base_loc,structure=s)
@@ -140,11 +140,11 @@ if __name__ == '__main__':
             SIC_yearly_base_loc_1978[j,i] = SIC_base_loc
             total_num_SIC[j,i] = np.sum(SIC_daily_num)
             total_area_SIC[j,i] = SIC_winterly_area
-            total_area_SMMR[j,i] = np.sum(cell_area_SMMR[SIC_base_loc_arr>0])/(1000**2)
+            total_area_SMMR[j,i] = np.nansum(cell_area_SMMR[SIC_base_loc_arr>0])/(1000**2)
 
 
     # Save polynya winter base map
-    pathsave =                                          # Path saving results
+    pathsave = '/proj/naiss2024-22-523/PhD_Year1/Revision_04092025/Results/'           # Path for saving results
     
     with nc.Dataset(f'{pathsave}SMMR_winter_basemap.nc', 'w', format='NETCDF4') as file: \
         # Create dimensions
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         SIC_winter_loc = file.createVariable('SIC_winter_loc','f4',('conc','year','y','x'))
         SIC_winter_loc[:] = SIC_yearly_base_loc_1978[:]
 
-    # Generate date array
+        
     import itertools
     flatten_date = list(itertools.chain.from_iterable(date_list))
     time_series = pd.Series(flatten_date)
@@ -173,12 +173,12 @@ if __name__ == '__main__':
     formatted_dates_array = formatted_dates.dt.strftime('%Y-%m-%d').to_numpy()
 
     # Save daily polynya locations
-    pathsave =                                                                  # Path saving results
+    pathsave = '/proj/naiss2024-22-523/PhD_Year1/Revision_04092025/Results/'            # Path for saving results
     with nc.Dataset(f'{pathsave}daily_location_SMMR.nc', 'w', format='NETCDF4') as file: \
         # Create dimensions
-        file.createDimension('time', Daily_sic.shape[0] - 1)
-        file.createDimension('y', Daily_sic.shape[1])
-        file.createDimension('x', Daily_sic.shape[2])
+        file.createDimension('time', Daily_location.shape[0] - 1)
+        file.createDimension('y', Daily_location.shape[1])
+        file.createDimension('x', Daily_location.shape[2])
         
         time_var = file.createVariable('time', str, ('time',))
         time_var[:] = formatted_dates_array.astype(np.bytes_)
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     area_table_2 = pd.DataFrame(data=total_area_SMMR,index=conc_SMMR,columns=period_list)
     num_table = pd.DataFrame(data=total_num_SIC,index=conc_SMMR,columns=period_list)
     
-    area_table.to_csv('./Arctic_cumulative_area_1978_2024_SMMR.csv',sep=',')
-    area_table_2.to_csv('./Arctic_potential_area_1978_2024_SMMR.csv',sep=',')
-    num_table.to_csv('./Arctic_cumulative_num_1978_2024_SMMR.csv',sep=',')
+    area_table.to_csv('/proj/naiss2024-22-523/PhD_Year1/Revision_04092025/Area_csv/Arctic_cumulative_area_1978_2024_SMMR.csv',sep=',')
+    area_table_2.to_csv('/proj/naiss2024-22-523/PhD_Year1/Revision_04092025/Area_csv/Arctic_potential_area_1978_2024_SMMR.csv',sep=',')
+    num_table.to_csv('/proj/naiss2024-22-523/PhD_Year1/Revision_04092025/Area_csv/Arctic_cumulative_num_1978_2024_SMMR.csv',sep=',')
 

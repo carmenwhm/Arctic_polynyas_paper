@@ -23,7 +23,6 @@ def nc_merge_files(data_folder,grid_folder,data_path_name,grid_path_name,nc_var_
     nc_files = sorted(glob.glob(data_path))
     grid_file = os.path.join(grid_folder,'%s'%grid_path_name)
 
-
     for file in list(nc_files):
         data_f = nc.Dataset(file)
         file_var = data_f.variables['%s'%nc_var_name]
@@ -102,12 +101,24 @@ def nc_merge_files_NSIDC(data_folder,grid_folder,data_path_name,grid_name,nc_var
     upscale_lat = grid_f.variables['latitude'][:]
     upscale_lon = grid_f.variables['longitude'][:]
 
-    full_lat_list = np.full((len(nc_files),upscale_lat.shape[0],upscale_lon.shape[1]),np.nan)
-    full_lon_list = np.full((len(nc_files),upscale_lat.shape[0],upscale_lon.shape[1]),np.nan)
-    full_nc_list = np.full((len(nc_files),upscale_lat.shape[0],upscale_lon.shape[1]),np.nan)
-    date_list = np.full(len(nc_files),np.nan)
+    # --- filter files first ---
+    selected_files = []
 
-    for ifile,file in enumerate(nc_files):
+    for file in nc_files:
+        basename = os.path.basename(file)
+        date_check = basename.split('_')[4]
+        if date_check[4:6] not in ("11", "04"):
+            selected_files.append(file)
+      
+    # --- preallocate arrays with correct size ---
+    n_files = len(selected_files)
+
+    full_lat_list = np.full((n_files,upscale_lat.shape[0],upscale_lon.shape[1]),np.nan)
+    full_lon_list = np.full((n_files,upscale_lat.shape[0],upscale_lon.shape[1]),np.nan)
+    full_nc_list = np.full((n_files,upscale_lat.shape[0],upscale_lon.shape[1]),np.nan)
+    date_list = np.full(n_files,np.nan)
+
+    for ifile,file in enumerate(selected_files):
         try:
             data_f = nc.Dataset(file)
             file_var = data_f.variables['%s'%nc_var_name][0,:,:]
